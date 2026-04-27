@@ -100,6 +100,10 @@ lol-tracker/
 └── README.md           # This file
 ```
 
+## Demo 
+
+<img width="917" height="860" alt="image" src="https://github.com/user-attachments/assets/8ae3e623-1098-4a34-80ef-148dc01b8d09" />
+
 ## License
 
 MIT License
