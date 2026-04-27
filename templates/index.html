@@ -575,6 +575,10 @@
                     });
             }
         }
+
+        // Auto-poll for live game data every 5 seconds
+        setInterval(fetchLivePrediction, 5000);
+        fetchLivePrediction();
     </script>
 </body>
 </html>
