@@ -134,8 +134,8 @@ for target_min in minutes_to_train:
     test_df = df_m.iloc[test_idx].copy()
 
     scaler = StandardScaler()
-    train_df[continuous_cols] = scaler.fit_transform(train_df[continuous_cols])
-    test_df[continuous_cols] = scaler.transform(test_df[continuous_cols])
+    train_df[continuous_cols] = scaler.fit_transform(train_df[continuous_cols]).astype('float32')
+    test_df[continuous_cols] = scaler.transform(test_df[continuous_cols]).astype('float32')
 
     joblib.dump(scaler, f'scaler_{target_min}m.pkl')
 
@@ -179,8 +179,8 @@ for target_min in minutes_to_train:
             for b in range(len(X_batch)):
                 seq_batch[b] = X_batch[b]
             
-            X_tensor = torch.tensor(seq_batch).to(device)
-            y_tensor = torch.tensor(y_batch).reshape(-1, 1).to(device)
+            X_tensor = torch.tensor(seq_batch, dtype=torch.float32).to(device)
+            y_tensor = torch.tensor(y_batch.reshape(-1, 1), dtype=torch.float32).to(device)
             
             optimizer.zero_grad()
             preds = model(X_tensor)
@@ -196,12 +196,12 @@ for target_min in minutes_to_train:
         
         model.eval()
         with torch.no_grad():
-            test_seq = np.zeros((len(X_test_raw), SEQ_LEN, feature_count))
+            test_seq = np.zeros((len(X_test_raw), SEQ_LEN, feature_count), dtype=np.float32)
             for b in range(len(X_test_raw)):
                 test_seq[b] = X_test_raw[b]
             
-            val_preds = model(torch.tensor(test_seq).to(device)).round()
-            y_test_tensor = torch.tensor(y_test_raw).to(device)
+            val_preds = model(torch.tensor(test_seq, dtype=torch.float32).to(device)).round()
+            y_test_tensor = torch.tensor(y_test_raw, dtype=torch.float32).to(device)
             val_acc = (val_preds == y_test_tensor.reshape(-1, 1)).sum().item() / len(y_test_raw)
             
             scheduler.step(val_acc)
