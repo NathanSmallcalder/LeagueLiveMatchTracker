@@ -6,6 +6,8 @@ A real-time win probability predictor for League of Legends matches, built with 
 
 This application connects to Riot's live client API to fetch real-time game data and uses a neural network to predict the probability of each team winning. It features a Hextech-themed web interface with live Chart.js updates showing win probability trends, gold lead, and objective tracking.
 
+![Demo](demo_img.png)
+
 ## Features
 
 - **Real-time win probability prediction** using a PyTorch neural network
