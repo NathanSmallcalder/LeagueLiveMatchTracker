@@ -558,7 +558,13 @@ def live_prediction():
             cs = p.get('scores', {}).get('creepScore', 0)
             kills = p.get('scores', {}).get('kills', 0)
             assists = p.get('scores', {}).get('assists', 0)
-            total_gold = 500 + (cs * 20) + (kills * 300) + (assists * 150)
+            
+            sim_total_gold = p.get('scores', {}).get('total_gold', 0)
+            if sim_total_gold > 0:
+                total_gold = sim_total_gold
+            else:
+                items_value = sum(ITEM_DATA.get(i['itemID'], 0) for i in p.get('items', []))
+                total_gold = 500 + (cs * 21) + (kills * 300) + (assists * 150) + items_value
             
             if team == "blue": blue_gold_total += total_gold
             else: red_gold_total += total_gold
