@@ -381,9 +381,6 @@
         Chart.defaults.borderColor = 'rgba(200, 170, 110, 0.2)';
 
         var canvas = document.getElementById('winProbChart');
-        console.log('Canvas found:', canvas);
-        console.log('Canvas dimensions:', canvas ? canvas.width + 'x' + canvas.height : 'N/A');
-
         var ctx = canvas.getContext('2d');
 
         const winProbChart = new Chart(ctx, {
@@ -428,8 +425,6 @@
             }
         });
 
-        console.log('Chart initialized, ID:', winProbChart.id);
-
         function formatTime(seconds) {
             const m = Math.floor(seconds / 60).toString().padStart(2, '0');
             const s = Math.floor(seconds % 60).toString().padStart(2, '0');
@@ -443,20 +438,17 @@
 
                 if (response.ok) {
                     document.getElementById('status-msg').innerText = "Live tracking active...";
-                    
-                    // Update Time
+
                     const timeStr = formatTime(data.time);
                     document.getElementById('game-time').innerText = timeStr;
-                    
-                    // If game restarted (goes back to 5 mins), show message
+
                     if (data.time <= 400 && data.time > 250) {
                         document.getElementById('status-msg').innerText = "Demo restarted (mid-game simulation).";
                     }
 
-                    // Update Gold
                     document.getElementById('blue-gold').innerText = Math.round(data.blue_gold).toLocaleString();
                     document.getElementById('red-gold').innerText = Math.round(data.red_gold).toLocaleString();
-                    
+
                     const goldDiff = data.blue_gold - data.red_gold;
                     const leadElem = document.getElementById('gold-lead');
                     if (goldDiff > 0) {
@@ -470,13 +462,11 @@
                         leadElem.className = "stat-value gold-text";
                     }
 
-                    // Update Probabilities
                     const blueProb = (data.blue_prob * 100).toFixed(1);
                     const redProb = (data.red_prob * 100).toFixed(1);
                     document.getElementById('blue-prob').innerText = `${blueProb}%`;
                     document.getElementById('red-prob').innerText = `${redProb}%`;
 
-                    // Update Scoreboard Stats
                     if (data.blue_stats) {
                         document.getElementById('b-kills').innerText = data.blue_stats.kills;
                         document.getElementById('b-towers').innerText = data.blue_stats.towers;
@@ -490,7 +480,6 @@
                         document.getElementById('r-barons').innerText = data.red_stats.barons;
                     }
 
-                    // Update Chart
                     winProbChart.data.labels.push(timeStr);
                     winProbChart.data.datasets[0].data.push(blueProb);
                     winProbChart.data.datasets[1].data.push(redProb);
@@ -504,10 +493,6 @@
             }
         }
 
-        // Don't auto-poll on page load - only poll when demo is running or game is detected
-        // fetchLivePrediction();
-
-        // Modal functions
         function openInfoModal() {
             document.getElementById('info-modal').classList.add('open');
         }
@@ -515,7 +500,7 @@
         function closeInfoModal() {
             document.getElementById('info-modal').classList.remove('open');
         }
-        
+
         function openFeaturesModal() {
             document.getElementById('features-modal').classList.add('open');
         }
@@ -524,88 +509,67 @@
             document.getElementById('features-modal').classList.remove('open');
         }
 
-        // Close modal when clicking outside
         window.onclick = function(event) {
             if (event.target.classList.contains('modal')) {
                 event.target.classList.remove('open');
             }
         }
 
-        // Demo toggle function
         let isDemoRunning = false;
         let pollingInterval = null;
 
-async function toggleDemo() {
+        function toggleDemo() {
             const btn = document.getElementById('demo-btn');
-            
-            try {
-                if (!isDemoRunning) {
-                    const response = await fetch('/api/start_simulator', { method: 'POST' });
-                    const data = await response.json();
-                    
-                    if (response.ok && (data.status === 'started' || data.status === 'already_running')) {
-                        isDemoRunning = true;
-                        btn.innerText = 'Stop Demo';
-                        btn.classList.add('active');
-                        document.getElementById('status-msg').innerText = "Demo simulation running...";
-                        
-                        // Start polling
-                        if (pollingInterval) clearInterval(pollingInterval);
-                        pollingInterval = setInterval(fetchLivePrediction, 3000);
-                        fetchLivePrediction();
-                    } else {
-                        console.error('Failed to start simulator:', data);
-                        document.getElementById('status-msg').innerText = "Error: " + (data.error || data.message || 'Failed to start simulator');
-                    }
-                } else {
-                        alert('Failed to start simulator: ' + data.message);
-                    }
-                } else {
-                    const response = await fetch('/api/stop_simulator', { method: 'POST' });
-                    const data = await response.json();
-                    
-                    isDemoRunning = false;
-                    btn.innerText = 'Run Demo';
-                    btn.classList.remove('active');
-                    
-                    // Stop polling
-                    if (pollingInterval) {
-                        clearInterval(pollingInterval);
-                        pollingInterval = null;
-                    }
-                    
-                    // Reset all display values
-                    document.getElementById('game-time').innerText = '00:00';
-                    document.getElementById('gold-lead').innerText = 'Even';
-                    document.getElementById('gold-lead').className = 'stat-value gold-text';
-                    document.getElementById('blue-gold').innerText = '0';
-                    document.getElementById('red-gold').innerText = '0';
-                    document.getElementById('blue-prob').innerText = '50%';
-                    document.getElementById('red-prob').innerText = '50%';
-                    
-                    // Reset scoreboard
-                    document.getElementById('b-kills').innerText = '0';
-                    document.getElementById('b-towers').innerText = '0';
-                    document.getElementById('b-dragons').innerText = '0';
-                    document.getElementById('b-barons').innerText = '0';
-                    document.getElementById('r-kills').innerText = '0';
-                    document.getElementById('r-towers').innerText = '0';
-                    document.getElementById('r-dragons').innerText = '0';
-                    document.getElementById('r-barons').innerText = '0';
-                    
-                    // Clear chart
-                    winProbChart.data.labels = [];
-                    winProbChart.data.datasets[0].data = [];
-                    winProbChart.data.datasets[1].data = [];
-                    winProbChart.update();
-                    
-                    document.getElementById('status-msg').innerText = "Demo stopped. Variables reset.";
-                }
-            } catch (error) {
-                console.error('Error toggling demo:', error);
+
+            if (!isDemoRunning) {
+                fetch('/api/start_simulator', { method: 'POST' })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.status === 'started' || data.status === 'already_running') {
+                            isDemoRunning = true;
+                            btn.innerText = 'Stop Demo';
+                            btn.classList.add('active');
+                            document.getElementById('status-msg').innerText = "Demo simulation running...";
+                            if (pollingInterval) clearInterval(pollingInterval);
+                            pollingInterval = setInterval(fetchLivePrediction, 3000);
+                            fetchLivePrediction();
+                        } else {
+                            document.getElementById('status-msg').innerText = "Error: " + (data.error || data.message || 'Failed to start simulator');
+                        }
+                    });
+            } else {
+                fetch('/api/stop_simulator', { method: 'POST' })
+                    .then(() => {
+                        isDemoRunning = false;
+                        btn.innerText = 'Run Demo';
+                        btn.classList.remove('active');
+                        if (pollingInterval) {
+                            clearInterval(pollingInterval);
+                            pollingInterval = null;
+                        }
+                        document.getElementById('game-time').innerText = '00:00';
+                        document.getElementById('gold-lead').innerText = 'Even';
+                        document.getElementById('gold-lead').className = 'stat-value gold-text';
+                        document.getElementById('blue-gold').innerText = '0';
+                        document.getElementById('red-gold').innerText = '0';
+                        document.getElementById('blue-prob').innerText = '50%';
+                        document.getElementById('red-prob').innerText = '50%';
+                        document.getElementById('b-kills').innerText = '0';
+                        document.getElementById('b-towers').innerText = '0';
+                        document.getElementById('b-dragons').innerText = '0';
+                        document.getElementById('b-barons').innerText = '0';
+                        document.getElementById('r-kills').innerText = '0';
+                        document.getElementById('r-towers').innerText = '0';
+                        document.getElementById('r-dragons').innerText = '0';
+                        document.getElementById('r-barons').innerText = '0';
+                        winProbChart.data.labels = [];
+                        winProbChart.data.datasets[0].data = [];
+                        winProbChart.data.datasets[1].data = [];
+                        winProbChart.update();
+                        document.getElementById('status-msg').innerText = "Demo stopped. Variables reset.";
+                    });
             }
         }
-
     </script>
 </body>
 </html>
