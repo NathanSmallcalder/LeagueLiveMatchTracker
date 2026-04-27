@@ -215,19 +215,19 @@
 
         .chart-container {
             position: relative;
-            width: 980px;
-            height: 320px;
-            max-width: 100%;
+            width: 100%;
+            max-width: 1000px;
+            min-height: 350px;
             background-color: var(--panel-bg);
             border: 1px solid var(--gold-accent);
             border-radius: 4px;
-            padding: 20px;
+            padding: 15px;
         }
 
         #winProbChart {
             display: block;
-            width: 940px;
-            height: 280px;
+            width: 100% !important;
+            height: 300px !important;
         }
 
         .status {
@@ -375,7 +375,7 @@
     </div>
 
     <div class="chart-container">
-        <canvas id="winProbChart" width="940" height="280"></canvas>
+        <canvas id="winProbChart"></canvas>
     </div>
 
     <div class="status" id="status-msg">Waiting for game data...</div>
@@ -413,7 +413,7 @@
                 ]
             },
             options: {
-                responsive: false,
+                responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { labels: { color: '#F0E6D2', font: { size: 13 } } }
