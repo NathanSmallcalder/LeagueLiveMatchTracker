@@ -215,9 +215,9 @@
 
         .chart-container {
             position: relative;
-            width: 960px;
-            height: 300px;
-            max-width: 1000px;
+            width: 980px;
+            height: 320px;
+            max-width: 100%;
             background-color: var(--panel-bg);
             border: 1px solid var(--gold-accent);
             border-radius: 4px;
@@ -226,6 +226,8 @@
 
         #winProbChart {
             display: block;
+            width: 940px;
+            height: 280px;
         }
 
         .status {
@@ -373,7 +375,7 @@
     </div>
 
     <div class="chart-container">
-        <canvas id="winProbChart" width="960" height="260"></canvas>
+        <canvas id="winProbChart" width="940" height="280"></canvas>
     </div>
 
     <div class="status" id="status-msg">Waiting for game data...</div>
@@ -396,7 +398,8 @@
                         borderColor: '#00BFFF',
                         backgroundColor: 'rgba(0, 191, 255, 0.1)',
                         fill: true,
-                        tension: 0.4
+                        tension: 0.4,
+                        pointRadius: 3
                     },
                     {
                         label: 'Red Win Prob (%)',
@@ -404,7 +407,8 @@
                         borderColor: '#FF4500',
                         backgroundColor: 'rgba(255, 69, 0, 0.1)',
                         fill: true,
-                        tension: 0.4
+                        tension: 0.4,
+                        pointRadius: 3
                     }
                 ]
             },
@@ -412,16 +416,20 @@
                 responsive: false,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { labels: { color: '#F0E6D2' } }
+                    legend: { labels: { color: '#F0E6D2', font: { size: 13 } } }
                 },
                 scales: {
                     y: {
                         min: 0,
                         max: 100,
-                        title: { display: true, text: 'Probability (%)', color: '#C8AA6E' }
+                        title: { display: true, text: 'Probability (%)', color: '#C8AA6E', font: { size: 12 } },
+                        ticks: { color: '#A09B8C', font: { size: 11 } },
+                        grid: { color: 'rgba(200, 170, 110, 0.15)' }
                     },
                     x: {
-                        title: { display: true, text: 'Game Time', color: '#C8AA6E' }
+                        title: { display: true, text: 'Game Time', color: '#C8AA6E', font: { size: 12 } },
+                        ticks: { color: '#A09B8C', font: { size: 11 } },
+                        grid: { color: 'rgba(200, 170, 110, 0.15)' }
                     }
                 }
             }
