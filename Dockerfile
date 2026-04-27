@@ -6,12 +6,10 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install PyTorch CPU-only first (much smaller than full PyTorch)
 RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 
 # Install other dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir flask requests urllib3 joblib pandas numpy gunicorn
+RUN pip install --no-cache-dir flask flask-limiter requests urllib3 joblib pandas numpy gunicorn
 
 # Copy application files
 COPY app.py ./
