@@ -1,0 +1,51 @@
+# === NEEDED FOR APP ===
+# templates/index.html  # Keep this in git
+# app.py                # Keep this in git
+# model.py              # Keep this in git (for retraining)
+# requirements.txt     # Keep this in git
+# Dockerfile           # Keep this in git
+# plan.md              # Keep this in git
+# lol_model_*.pth      # Keep these in git
+# scaler*.pkl           # Keep these in git
+# df_wide.csv          # Keep this in git (feature template)
+
+# === DATA COLLECTION (one-time scripts, not needed to run app) ===
+championsRequest.py
+collect_summoners.py
+databaseQuries.py
+DataCollector.py
+RiotApiCalls.py
+extract.py
+schema.sql
+config.py
+simulator.py          # Old standalone - now embedded in app.py
+
+# === TRAINING DATA ===
+processed_summoner_data.csv
+matches.csv
+league_data_audit.csv
+summoner_names.txt
+
+# === OLD/UNUSED MODELS ===
+lol_win_predictor.pth
+
+# === RAW DATA (too large) ===
+*.zip
+data/
+*.csv
+*.sql
+*.log
+
+# === TESTING & UTILS ===
+mock_riot_api.py
+test_inference.py
+test_server.py
+DeepLearning/
+
+# === PYTHON ===
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+Thumbs.db

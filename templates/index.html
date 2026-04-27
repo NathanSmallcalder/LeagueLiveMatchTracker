@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live League Tracker</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Hextech Theme Variables */
+        :root {
+            --bg-color: #010A13; /* Deep dark blue */
+            --panel-bg: #091428; /* Lighter dark blue for panels */
+            --gold-accent: #C8AA6E; /* Hextech gold */
+            --gold-highlight: #F0E6D2;
+            --blue-team: #005A82;
+            --red-team: #C81E1E;
+            --text-main: #A09B8C;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: var(--gold-accent);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 2px solid var(--gold-accent);
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--gold-accent);
+            color: var(--gold-highlight);
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            background-color: var(--gold-accent);
+            color: var(--bg-color);
+        }
+
+        .btn.active {
+            background-color: var(--gold-accent);
+            color: var(--bg-color);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.open {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: var(--panel-bg);
+            border: 2px solid var(--gold-accent);
+            padding: 30px;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(200, 170, 110, 0.3);
+        }
+
+        .modal h2 {
+            color: var(--gold-accent);
+            margin-top: 0;
+        }
+
+        .modal-close {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--gold-accent);
+            cursor: pointer;
+        }
+
+        .modal-close:hover {
+            color: var(--gold-highlight);
+        }
+
+        .instructions {
+            line-height: 1.8;
+        }
+
+        .instructions code {
+            background-color: var(--bg-color);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--gold-accent);
+        }
+
+        .dashboard {
+            display: flex;
+            width: 100%;
+            max-width: 1000px;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stats-dashboard {
+            display: flex;
+            width: 100%;
+            max-width: 1000px;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--gold-accent);
+            border-radius: 4px;
+            padding: 20px;
+            flex: 1;
+            text-align: center;
+            box-shadow: 0 0 10px rgba(200, 170, 110, 0.1);
+        }
+
+        .scoreboard-panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--gold-accent);
+            border-radius: 4px;
+            padding: 15px;
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 0 10px rgba(200, 170, 110, 0.1);
+        }
+
+        .team-stats {
+            flex: 1;
+            text-align: center;
+        }
+
+        .team-stats h3 {
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
+            font-size: 1.1rem;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 20px;
+            font-size: 0.95rem;
+            border-bottom: 1px solid rgba(200, 170, 110, 0.1);
+        }
+        
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .vs-divider {
+            color: var(--gold-accent);
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 0 20px;
+        }
+
+        .panel h2 {
+            margin-top: 0;
+            color: var(--gold-highlight);
+            font-size: 1.2rem;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .blue-text { color: #00BFFF; }
+        .red-text { color: #FF4500; }
+        .gold-text { color: var(--gold-accent); }
+
+        .chart-container {
+            width: 100%;
+            max-width: 1000px;
+            background-color: var(--panel-bg);
+            border: 1px solid var(--gold-accent);
+            border-radius: 4px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .status {
+            margin-top: 20px;
+            font-style: italic;
+            color: var(--gold-accent);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>
+        <span>Live League Tracker</span>
+        <div class="header-buttons">
+            <button class="btn" id="demo-btn" onclick="toggleDemo()">Run Demo</button>
+            <button class="btn" onclick="openInfoModal()">Info</button>
+            <button class="btn" onclick="openFeaturesModal()">Features</button>
+            <a href="https://github.com/yourusername" target="_blank" class="btn">GitHub</a>
+        </div>
+    </h1>
+
+    <!-- Info Modal -->
+    <div id="info-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeInfoModal()">&times;</span>
+            <h2>How to Use</h2>
+            <div class="instructions">
+                <h3>Option 1: Run the Demo</h3>
+                <p>1. Click the <strong>Run Demo</strong> button in the top right.</p>
+                <p>2. Wait a moment for the simulator to start.</p>
+                <p>3. Watch the live prediction graph build in real-time!</p>
+                
+                <h3>How It Works</h3>
+                <p>This application connects to the local Riot API at <code>127.0.0.1:2999</code>.</p>
+                <p>To connect to a real game, you must run this app locally (not remotely) with League of Legends running.</p>
+                <p>The app uses a PyTorch neural network trained on 1.7M+ match intervals to predict win probability based on live game stats.</p>
+                
+                <h3>Data Sources</h3>
+                <p>- <strong>Items:</strong> Fetched dynamically from Riot Data Dragon</p>
+                <p>- <strong>Model:</strong> LoLNet (3-layer MLP trained on match data)</p>
+                <p>- <strong>Features:</strong> 1821 columns (gold, XP, CS, kills, champions, objectives)</p>
+                
+                <h3>View Source Code</h3>
+                <p>Click the <strong>GitHub</strong> button in the header to view the full source code.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Modal -->
+    <div id="features-modal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <span class="modal-close" onclick="closeFeaturesModal()">&times;</span>
+            <h2>ML Features (1821 columns)</h2>
+            <div class="instructions" style="max-height: 400px; overflow-y: auto;">
+                <h3>Team Features (Match Level)</h3>
+                <ul style="font-size: 0.85rem; columns: 2;">
+                    <li>team_kills (differential)</li>
+                    <li>team_inhibitors</li>
+                    <li>team_towers</li>
+                    <li>team_dragons</li>
+                    <li>team_barons</li>
+                    <li>team_void_grubs</li>
+                    <li>team_heralds</li>
+                    <li>at_soul_point</li>
+                </ul>
+                
+                <h3>Player Stats (Per Slot 0-9)</h3>
+                <ul style="font-size: 0.85rem; columns: 2;">
+                    <li>total_gold_0 to 9</li>
+                    <li>xp_0 to 9</li>
+                    <li>level_0 to 9</li>
+                    <li>kills_0 to 9</li>
+                    <li>deaths_0 to 9</li>
+                    <li>assists_0 to 9</li>
+                    <li>cs_0 to 9</li>
+                    <li>jungle_cs_0 to 9</li>
+                </ul>
+                
+                <h3>Lane Differentials</h3>
+                <ul style="font-size: 0.85rem; columns: 2;">
+                    <li>gold_diff_lane_0 to 4</li>
+                    <li>xp_diff_lane_0 to 4</li>
+                </ul>
+                
+                <h3>Champion One-Hot Encoding</h3>
+                <p style="font-size: 0.8rem;">~1600 binary columns (champion_{name}_{slot})</p>
+                
+                <h3>Model Architecture</h3>
+                <p>- Input: 1818 features</p>
+                <p>- Layer 1: 1024 neurons (BatchNorm, ReLU, Dropout 0.6)</p>
+                <p>- Layer 2: 256 neurons (BatchNorm, ReLU)</p>
+                <p>- Output: Sigmoid (Red Win Probability)</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <div class="panel">
+            <h2>Game Time</h2>
+            <div class="stat-value gold-text" id="game-time">00:00</div>
+        </div>
+        <div class="panel">
+            <h2>Gold Lead</h2>
+            <div class="stat-value" id="gold-lead">Even</div>
+            <div style="font-size: 0.9rem">
+                Blue: <span class="blue-text" id="blue-gold">0</span> | 
+                Red: <span class="red-text" id="red-gold">0</span>
+            </div>
+        </div>
+        <div class="panel">
+            <h2>Win Probability</h2>
+            <div class="stat-value">
+                <span class="blue-text" id="blue-prob">50%</span> - 
+                <span class="red-text" id="red-prob">50%</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats-dashboard">
+        <div class="scoreboard-panel">
+            <div class="team-stats">
+                <h3 class="blue-text">Blue Team</h3>
+                <div class="stat-row"><span>Kills</span> <strong class="blue-text" id="b-kills">0</strong></div>
+                <div class="stat-row"><span>Towers</span> <strong class="blue-text" id="b-towers">0</strong></div>
+                <div class="stat-row"><span>Dragons</span> <strong class="blue-text" id="b-dragons">0</strong></div>
+                <div class="stat-row"><span>Barons</span> <strong class="blue-text" id="b-barons">0</strong></div>
+            </div>
+            
+            <div class="vs-divider">VS</div>
+            
+            <div class="team-stats">
+                <h3 class="red-text">Red Team</h3>
+                <div class="stat-row"><strong class="red-text" id="r-kills">0</strong> <span>Kills</span></div>
+                <div class="stat-row"><strong class="red-text" id="r-towers">0</strong> <span>Towers</span></div>
+                <div class="stat-row"><strong class="red-text" id="r-dragons">0</strong> <span>Dragons</span></div>
+                <div class="stat-row"><strong class="red-text" id="r-barons">0</strong> <span>Barons</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="winProbChart"></canvas>
+    </div>
+
+    <div class="status" id="status-msg">Waiting for game data...</div>
+
+    <script>
+        const ctx = document.getElementById('winProbChart').getContext('2d');
+        
+        Chart.defaults.color = '#A09B8C';
+        Chart.defaults.borderColor = 'rgba(200, 170, 110, 0.2)';
+
+        const winProbChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Blue Win Prob (%)',
+                        data: [],
+                        borderColor: '#00BFFF',
+                        backgroundColor: 'rgba(0, 191, 255, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Red Win Prob (%)',
+                        data: [],
+                        borderColor: '#FF4500',
+                        backgroundColor: 'rgba(255, 69, 0, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 100,
+                        title: { display: true, text: 'Probability (%)', color: '#C8AA6E' }
+                    },
+                    x: {
+                        title: { display: true, text: 'Game Time', color: '#C8AA6E' }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#F0E6D2' } }
+                }
+            }
+        });
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        async function fetchLivePrediction() {
+            try {
+                const response = await fetch('/api/live_prediction');
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('status-msg').innerText = "Live tracking active...";
+                    
+                    // Update Time
+                    const timeStr = formatTime(data.time);
+                    document.getElementById('game-time').innerText = timeStr;
+                    
+                    // If game restarted (goes back to 5 mins), show message
+                    if (data.time <= 400 && data.time > 250) {
+                        document.getElementById('status-msg').innerText = "Demo restarted (mid-game simulation).";
+                    }
+
+                    // Update Gold
+                    document.getElementById('blue-gold').innerText = Math.round(data.blue_gold).toLocaleString();
+                    document.getElementById('red-gold').innerText = Math.round(data.red_gold).toLocaleString();
+                    
+                    const goldDiff = data.blue_gold - data.red_gold;
+                    const leadElem = document.getElementById('gold-lead');
+                    if (goldDiff > 0) {
+                        leadElem.innerText = `+${Math.round(goldDiff).toLocaleString()}`;
+                        leadElem.className = "stat-value blue-text";
+                    } else if (goldDiff < 0) {
+                        leadElem.innerText = `+${Math.round(Math.abs(goldDiff)).toLocaleString()}`;
+                        leadElem.className = "stat-value red-text";
+                    } else {
+                        leadElem.innerText = "Even";
+                        leadElem.className = "stat-value gold-text";
+                    }
+
+                    // Update Probabilities
+                    const blueProb = (data.blue_prob * 100).toFixed(1);
+                    const redProb = (data.red_prob * 100).toFixed(1);
+                    document.getElementById('blue-prob').innerText = `${blueProb}%`;
+                    document.getElementById('red-prob').innerText = `${redProb}%`;
+
+                    // Update Scoreboard Stats
+                    if (data.blue_stats) {
+                        document.getElementById('b-kills').innerText = data.blue_stats.kills;
+                        document.getElementById('b-towers').innerText = data.blue_stats.towers;
+                        document.getElementById('b-dragons').innerText = data.blue_stats.dragons;
+                        document.getElementById('b-barons').innerText = data.blue_stats.barons;
+                    }
+                    if (data.red_stats) {
+                        document.getElementById('r-kills').innerText = data.red_stats.kills;
+                        document.getElementById('r-towers').innerText = data.red_stats.towers;
+                        document.getElementById('r-dragons').innerText = data.red_stats.dragons;
+                        document.getElementById('r-barons').innerText = data.red_stats.barons;
+                    }
+
+                    // Update Chart
+                    winProbChart.data.labels.push(timeStr);
+                    winProbChart.data.datasets[0].data.push(blueProb);
+                    winProbChart.data.datasets[1].data.push(redProb);
+                    winProbChart.update();
+
+                } else {
+                    document.getElementById('status-msg').innerText = data.error || "Waiting for game...";
+                }
+            } catch (error) {
+                document.getElementById('status-msg').innerText = "Error connecting to server.";
+            }
+        }
+
+        // Auto-poll for live game data on page load
+        setInterval(fetchLivePrediction, 5000);
+        fetchLivePrediction();
+
+        // Modal functions
+        function openInfoModal() {
+            document.getElementById('info-modal').classList.add('open');
+        }
+
+        function closeInfoModal() {
+            document.getElementById('info-modal').classList.remove('open');
+        }
+        
+        function openFeaturesModal() {
+            document.getElementById('features-modal').classList.add('open');
+        }
+
+        function closeFeaturesModal() {
+            document.getElementById('features-modal').classList.remove('open');
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('open');
+            }
+        }
+
+        // Demo toggle function
+        let isDemoRunning = false;
+        let pollingInterval = null;
+
+        async function toggleDemo() {
+            const btn = document.getElementById('demo-btn');
+            
+            try {
+                if (!isDemoRunning) {
+                    const response = await fetch('/api/start_simulator', { method: 'POST' });
+                    const data = await response.json();
+                    
+                    if (data.status === 'started' || data.status === 'already_running') {
+                        isDemoRunning = true;
+                        btn.innerText = 'Stop Demo';
+                        btn.classList.add('active');
+                        document.getElementById('status-msg').innerText = "Demo simulation running...";
+                        
+                        // Start polling
+                        if (pollingInterval) clearInterval(pollingInterval);
+                        pollingInterval = setInterval(fetchLivePrediction, 5000);
+                        fetchLivePrediction();
+                    } else {
+                        alert('Failed to start simulator: ' + data.message);
+                    }
+                } else {
+                    const response = await fetch('/api/stop_simulator', { method: 'POST' });
+                    const data = await response.json();
+                    
+                    isDemoRunning = false;
+                    btn.innerText = 'Run Demo';
+                    btn.classList.remove('active');
+                    
+                    // Stop polling
+                    if (pollingInterval) {
+                        clearInterval(pollingInterval);
+                        pollingInterval = null;
+                    }
+                    
+                    // Reset all display values
+                    document.getElementById('game-time').innerText = '00:00';
+                    document.getElementById('gold-lead').innerText = 'Even';
+                    document.getElementById('gold-lead').className = 'stat-value gold-text';
+                    document.getElementById('blue-gold').innerText = '0';
+                    document.getElementById('red-gold').innerText = '0';
+                    document.getElementById('blue-prob').innerText = '50%';
+                    document.getElementById('red-prob').innerText = '50%';
+                    
+                    // Reset scoreboard
+                    document.getElementById('b-kills').innerText = '0';
+                    document.getElementById('b-towers').innerText = '0';
+                    document.getElementById('b-dragons').innerText = '0';
+                    document.getElementById('b-barons').innerText = '0';
+                    document.getElementById('r-kills').innerText = '0';
+                    document.getElementById('r-towers').innerText = '0';
+                    document.getElementById('r-dragons').innerText = '0';
+                    document.getElementById('r-barons').innerText = '0';
+                    
+                    // Clear chart
+                    winProbChart.data.labels = [];
+                    winProbChart.data.datasets[0].data = [];
+                    winProbChart.data.datasets[1].data = [];
+                    winProbChart.update();
+                    
+                    document.getElementById('status-msg').innerText = "Demo stopped. Variables reset.";
+                }
+            } catch (error) {
+                console.error('Error toggling demo:', error);
+            }
+        }
+
+    </script>
+</body>
+</html>
