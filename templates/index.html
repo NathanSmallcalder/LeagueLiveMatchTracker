@@ -214,20 +214,11 @@
         .gold-text { color: var(--gold-accent); }
 
         .chart-container {
-            position: relative;
-            width: 100%;
-            max-width: 1000px;
-            height: 550px;
             background-color: var(--panel-bg);
             border: 1px solid var(--gold-accent);
             border-radius: 4px;
-            padding: 15px;
-        }
-
-        #winProbChart {
-            display: block;
-            width: 100% !important;
-            height: 500px !important;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(200, 170, 110, 0.1);
         }
 
         .status {
@@ -375,7 +366,7 @@
     </div>
 
     <div class="chart-container">
-        <canvas id="winProbChart"></canvas>
+        <canvas id="winProbChart" width="940" height="500"></canvas>
     </div>
 
     <div class="status" id="status-msg">Waiting for game data...</div>
@@ -413,8 +404,7 @@
                 ]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
+                responsive: false,
                 plugins: {
                     legend: { labels: { color: '#F0E6D2', font: { size: 13 } } }
                 },
