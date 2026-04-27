@@ -495,9 +495,8 @@
             }
         }
 
-        // Auto-poll for live game data on page load
-        setInterval(fetchLivePrediction, 5000);
-        fetchLivePrediction();
+        // Don't auto-poll on page load - only poll when demo is running or game is detected
+        // fetchLivePrediction();
 
         // Modal functions
         function openInfoModal() {
@@ -527,7 +526,7 @@
         let isDemoRunning = false;
         let pollingInterval = null;
 
-        async function toggleDemo() {
+async function toggleDemo() {
             const btn = document.getElementById('demo-btn');
             
             try {
@@ -535,7 +534,7 @@
                     const response = await fetch('/api/start_simulator', { method: 'POST' });
                     const data = await response.json();
                     
-                    if (data.status === 'started' || data.status === 'already_running') {
+                    if (response.ok && (data.status === 'started' || data.status === 'already_running')) {
                         isDemoRunning = true;
                         btn.innerText = 'Stop Demo';
                         btn.classList.add('active');
@@ -543,9 +542,13 @@
                         
                         // Start polling
                         if (pollingInterval) clearInterval(pollingInterval);
-                        pollingInterval = setInterval(fetchLivePrediction, 5000);
+                        pollingInterval = setInterval(fetchLivePrediction, 3000);
                         fetchLivePrediction();
                     } else {
+                        console.error('Failed to start simulator:', data);
+                        document.getElementById('status-msg').innerText = "Error: " + (data.error || data.message || 'Failed to start simulator');
+                    }
+                } else {
                         alert('Failed to start simulator: ' + data.message);
                     }
                 } else {
