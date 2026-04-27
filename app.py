@@ -634,7 +634,7 @@ def live_prediction():
         
         seq_len = 5
         seq_input = np.tile(feature_values, (seq_len, 1))
-        seq_input = seq_input.reshape(1, seq_len, -1)
+        seq_input = seq_input.reshape(1, seq_len, -1).astype(np.float32)
         
         X_tensor = torch.tensor(seq_input).to(DEVICE)
         

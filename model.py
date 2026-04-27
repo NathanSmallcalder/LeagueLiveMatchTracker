@@ -149,6 +149,7 @@ for target_min in minutes_to_train:
     y_test_raw = test_df['winning_team'].values.astype('float32')
 
     print(f"Training samples: {len(X_train_raw)}, Feature count: {feature_count}")
+    print(f"X dtype: {X_train_raw.dtype}")
     
     model = LoLLSTM(input_dim=feature_count, hidden_dim=256, num_layers=2, dropout=0.3).to(device)
     
@@ -171,10 +172,10 @@ for target_min in minutes_to_train:
         indices = np.random.permutation(len(X_train_raw))
         for i in range(0, len(indices), batch_size):
             batch_idx = indices[i:i+batch_size]
-            X_batch = X_train_raw[batch_idx]
-            y_batch = y_train_raw[batch_idx]
+            X_batch = X_train_raw[batch_idx].astype(np.float32)
+            y_batch = y_train_raw[batch_idx].astype(np.float32)
             
-            seq_batch = np.zeros((len(X_batch), SEQ_LEN, feature_count))
+            seq_batch = np.zeros((len(X_batch), SEQ_LEN, feature_count), dtype=np.float32)
             for b in range(len(X_batch)):
                 seq_batch[b] = X_batch[b]
             
