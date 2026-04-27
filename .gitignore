@@ -1,15 +1,3 @@
-# === NEEDED FOR APP ===
-# templates/index.html  # Keep this in git
-# app.py                # Keep this in git
-# model.py              # Keep this in git (for retraining)
-# requirements.txt     # Keep this in git
-# Dockerfile           # Keep this in git
-# plan.md              # Keep this in git
-# lol_model_*.pth      # Keep these in git
-# scaler*.pkl           # Keep these in git
-# df_wide.csv          # Keep this in git (feature template)
-
-# === DATA COLLECTION (one-time scripts, not needed to run app) ===
 championsRequest.py
 collect_summoners.py
 databaseQuries.py
