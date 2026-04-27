@@ -2,6 +2,7 @@ import os
 import csv
 import json
 import requests
+import socket
 import torch
 import torch.nn as nn
 from flask import Flask, render_template, jsonify
@@ -11,11 +12,23 @@ import pandas as pd
 import numpy as np
 import random
 import time
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
-# Disable SSL warnings for localhost self-signed cert
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+# Disable SSL warnings only for localhost
+_is_localhost = socket.gethostbyname(socket.gethostname()) in ('127.0.0.1', '::1')
+if _is_localhost:
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 app = Flask(__name__)
+
+# Rate limiting - 60 requests per minute per IP
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["60 per minute"],
+    storage_uri="memory://"
+)
 
 # --- MODEL DEFINITION ---
 class ResidualBlock(nn.Module):
@@ -177,6 +190,7 @@ with app.app_context():
 # --- INTERNAL SIMULATOR ---
 
 @app.route('/api/start_simulator', methods=['POST'])
+@limiter.limit("10 per minute")
 def start_simulator():
     global simulator_active
     try:
@@ -187,6 +201,7 @@ def start_simulator():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/api/stop_simulator', methods=['POST'])
+@limiter.limit("10 per minute")
 def stop_simulator():
     global simulator_active
     simulator_active = False
@@ -266,6 +281,7 @@ def index():
     return render_template('index.html')
 
 @app.route('/api/live_prediction')
+@limiter.limit("30 per minute")
 def live_prediction():
     global simulator_active
     try:
@@ -443,7 +459,7 @@ def live_prediction():
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "An error occurred while processing your request"}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
