@@ -94,36 +94,160 @@ XP_TABLE = {
     15: 13020, 16: 14700, 17: 16480, 18: 18360
 }
 
+# Champion pools for simulator (top, jungle, mid, bot, support per team)
+SIM_CHAMPION_POOLS = {
+    "TOP": ["Darius", "Garen", "Malphite", "Camille", "Mordekaiser", "Ornn", "Jax", "Aatrox"],
+    "JUNGLE": ["LeeSin", "Vi", "Hecarim", "Elise", "Ekko", "Kayn", "RekSai", "JarvanIV"],
+    "MIDDLE": ["Ahri", "Zed", "Yasuo", "Syndra", "Orianna", "Viktor", "Leblanc", "Cassiopeia"],
+    "BOTTOM": ["Jinx", "MissFortune", "Aphelios", "Tristana", "Vayne", "KaiSa", "Ezreal", "Samira"],
+    "UTILITY": ["Thresh", "Leona", "Nautilus", "Morgana", "Lux", "Janna", "Lulu", "Rakan"]
+}
+
+SIM_ROLE_ORDER = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"]
+
+CS_PER_MINUTE_BY_ROLE = {
+    "TOP": (8, 12),
+    "JUNGLE": (5, 8),
+    "MIDDLE": (9, 13),
+    "BOTTOM": (10, 14),
+    "UTILITY": (1, 3)
+}
+
+ITEM_PRICES = {}
+SIM_COMMON_ITEMS = [
+    {"itemID": 1036, "name": "Long Sword", "cost": 350},
+    {"itemID": 1037, "name": "Amplifying Tome", "cost": 435},
+    {"itemID": 1038, "name": "Needlessly Large Rod", "cost": 1250},
+    {"itemID": 1039, "name": "Hunter's Talisman", "cost": 350},
+    {"itemID": 1040, "name": "Dagger", "cost": 300},
+    {"itemID": 1041, "name": "Ruby Crystal", "cost": 400},
+    {"itemID": 1052, "name": "Amplifying Tome", "cost": 435},
+    {"itemID": 1053, "name": "Null-Magic Mantle", "cost": 450},
+    {"itemID": 1054, "name": "Refillable Potion", "cost": 150},
+    {"itemID": 1055, "name": "Corrupting Potion", "cost": 250},
+    {"itemID": 2052, "name": "Poro-Snax", "cost": 0},
+    {"itemID": 3006, "name": "Berserker's Greaves", "cost": 300},
+    {"itemID": 3011, "name": "Sorcerer's Shoes", "cost": 350},
+    {"itemID": 3111, "name": "Mercury's Treads", "cost": 350},
+    {"itemID": 3047, "name": "Plated Steelcaps", "cost": 350},
+    {"itemID": 3070, "name": "Tear of the Goddess", "cost": 400},
+    {"itemID": 3074, "name": "Ravenous Hydra", "cost": 330},
+    {"itemID": 3089, "name": "Rabadon's Deathcap", "cost": 1100},
+    {"itemID": 3115, "name": "Nashor's Tooth", "cost": 500},
+    {"itemID": 3116, "name": "Rylai's Crystal Scepter", "cost": 450},
+    {"itemID": 3151, "name": "Ionian Boots of Lucidity", "cost": 350},
+    {"itemID": 3158, "name": "Ionian Boots of Lucidity", "cost": 350},
+    {"itemID": 3504, "name": "Ardent Censer", "cost": 250},
+    {"itemID": 3864, "name": "Mobility Boots", "cost": 350},
+    {"itemID": 6676, "name": "The Collector", "cost": 525},
+    {"itemID": 6653, "name": "Luden", "cost": 340},
+    {"itemID": 6672, "name": "Infinity Edge", "cost": 725},
+    {"itemID": 6673, "name": "Kraken Slayer", "cost": 300},
+    {"itemID": 6675, "name": "Navori", "cost": 300},
+    {"itemID": 6691, "name": "BotRK", "cost": 300},
+    {"itemID": 6692, "name": "Cannon", "cost": 300},
+    {"itemID": 6693, "name": "PD", "cost": 300},
+    {"itemID": 6694, "name": "RFC", "cost": 300},
+    {"itemID": 6695, "name": "KS", "cost": 300},
+    {"itemID": 6696, "name": "IE", "cost": 725},
+    {"itemID": 6697, "name": "GM", "cost": 300},
+    {"itemID": 6698, "name": "BT", "cost": 300},
+    {"itemID": 6699, "name": "LDR", "cost": 300},
+    {"itemID": 6700, "name": "MR", "cost": 300},
+    {"itemID": 6701, "name": "QSS", "cost": 300},
+    {"itemID": 6702, "name": "GA", "cost": 300},
+    {"itemID": 6703, "name": "DD", "cost": 300},
+    {"itemID": 6609, "name": "Shadowflame", "cost": 900},
+    {"itemID": 6616, "name": "Horizon", "cost": 280},
+    {"itemID": 6641, "name": "Crown", "cost": 280},
+    {"itemID": 6655, "name": "Luden's", "cost": 450},
+    {"itemID": 6656, "name": "Liandry", "cost": 400},
+    {"itemID": 6657, "name": "Archangel", "cost": 300},
+]
+
+ITEM_BY_ROLE = {
+    "TOP": [3074, 3047, 3864, 3006, 3111],
+    "JUNGLE": [1039, 3047, 3864, 3006, 3111],
+    "MIDDLE": [6655, 6609, 6616, 6641, 3089],
+    "BOTTOM": [6672, 6673, 6676, 6675, 6692],
+    "UTILITY": [3504, 3158, 3011, 3070, 3116],
+}
+
+def get_sim_item_price(item_id):
+    if not ITEM_PRICES:
+        for item in SIM_COMMON_ITEMS:
+            ITEM_PRICES[item["itemID"]] = item["cost"]
+    return ITEM_PRICES.get(item_id, 0)
+
 # Internal Simulator State
 simulator_active = False
 simulator_tick = 0
 sim_dragon_count = 0
 sim_baron_count = 0
-SIM_START_OFFSET = 300  # 5 mins in seconds
-SIM_MAX_TICKS = 210  # ~35 mins
+SIM_START_OFFSET = 300
+SIM_MAX_TICKS = 210
 
 def init_simulator_state():
     global sim_players, sim_events, sim_dragon_count, simulator_tick, sim_baron_count, sim_event_id
-    sim_players = [
-        {"summonerName": "B_Top", "team": "ORDER", "position": "TOP", "level": 4, "items": [{"itemID": 1036}], "scores": {"kills": 0, "deaths": 0, "assists": 0, "creepScore": 35}},
-        {"summonerName": "B_Jgl", "team": "ORDER", "position": "JUNGLE", "level": 4, "items": [{"itemID": 1037}], "scores": {"kills": 0, "deaths": 0, "assists": 0, "creepScore": 0}},
-        {"summonerName": "B_Mid", "team": "ORDER", "position": "MIDDLE", "level": 4, "items": [{"itemID": 1052}], "scores": {"kills": 0, "deaths": 0, "assists": 0, "creepScore": 42}},
-        {"summonerName": "B_Bot", "team": "ORDER", "position": "BOTTOM", "level": 4, "items": [{"itemID": 1055}], "scores": {"kills": 0, "deaths": 0, "assists": 0, "creepScore": 38}},
-        {"summonerName": "B_Sup", "team": "ORDER", "position": "UTILITY", "level": 3, "items": [{"itemID": 1004}], "scores": {"kills": 0, "deaths": 0, "assists": 0, "creepScore": 0}},
-        {"summonerName": "R_Top", "team": "CHAOS", "position": "TOP", "level": 4, "items": [{"itemID": 1036}], "scores": {"kills": 0, "deaths": 0, "assists": 0, "creepScore": 32}},
-        {"summonerName": "R_Jgl", "team": "CHAOS", "position": "JUNGLE", "level": 4, "items": [], "scores": {"kills": 0, "deaths": 0, "assists": 0, "creepScore": 0}},
-        {"summonerName": "R_Mid", "team": "CHAOS", "position": "MIDDLE", "level": 4, "items": [{"itemID": 1052}], "scores": {"kills": 0, "deaths": 0, "assists": 0, "creepScore": 45}},
-        {"summonerName": "R_Bot", "team": "CHAOS", "position": "BOTTOM", "level": 4, "items": [], "scores": {"kills": 0, "deaths": 0, "assists": 0, "creepScore": 35}},
-        {"summonerName": "R_Sup", "team": "CHAOS", "position": "UTILITY", "level": 3, "items": [{"itemID": 1004}], "scores": {"kills": 0, "deaths": 0, "assists": 0, "creepScore": 0}}
-    ]
+    
+    blue_champs = {}
+    red_champs = {}
+    for i, role in enumerate(SIM_ROLE_ORDER):
+        blue_champs[role] = random.choice(SIM_CHAMPION_POOLS[role])
+        red_champs[role] = random.choice(SIM_CHAMPION_POOLS[role])
+    
+    starting_gold = {
+        "TOP": 500, "JUNGLE": 450, "MIDDLE": 500, "BOTTOM": 500, "UTILITY": 400
+    }
+    
+    starting_cs = {
+        "TOP": 35, "JUNGLE": 0, "MIDDLE": 42, "BOTTOM": 38, "UTILITY": 0
+    }
+    
+    starting_items = {
+        "TOP": [1036],
+        "JUNGLE": [1039],
+        "MIDDLE": [1052],
+        "BOTTOM": [1040],
+        "UTILITY": [2031]
+    }
+    
+    starting_level = {
+        "TOP": 4, "JUNGLE": 4, "MIDDLE": 4, "BOTTOM": 4, "UTILITY": 3
+    }
+    
+    sim_players = []
+    for i, role in enumerate(SIM_ROLE_ORDER):
+        sim_players.append({
+            "summonerName": f"B_{role}",
+            "championName": blue_champs[role],
+            "team": "ORDER",
+            "position": role,
+            "level": starting_level[role],
+            "items": [{"itemID": item} for item in starting_items[role]],
+            "scores": {"kills": 0, "deaths": 0, "assists": 0, "creepScore": starting_cs[role]},
+            "gold": starting_gold[role],
+            "total_gold_spent": 0
+        })
+    
+    for i, role in enumerate(SIM_ROLE_ORDER):
+        sim_players.append({
+            "summonerName": f"R_{role}",
+            "championName": red_champs[role],
+            "team": "CHAOS",
+            "position": role,
+            "level": starting_level[role],
+            "items": [{"itemID": item} for item in starting_items[role]],
+            "scores": {"kills": 0, "deaths": 0, "assists": 0, "creepScore": starting_cs[role]},
+            "gold": starting_gold[role],
+            "total_gold_spent": 0
+        })
+    
     sim_events = []
     sim_event_id = 1
     sim_dragon_count = 0
     sim_baron_count = 0
     simulator_tick = 0
-
-# Common items for simulator
-COMMON_ITEMS_SIM = [1001, 1036, 1052, 1053, 3070, 3111, 3158, 6632, 6653, 3089]
 
 # --- STARTUP ROUTINES ---
 def fetch_datadragon_items():
@@ -215,59 +339,139 @@ def generate_simulated_data():
     if not simulator_active:
         return None
     
-    # Increment tick
     simulator_tick += 1
     
-    # Reset if max ticks reached
     if simulator_tick > SIM_MAX_TICKS:
         init_simulator_state()
         simulator_tick = 1
     
     game_time = SIM_START_OFFSET + (simulator_tick * 10)
+    game_minutes = game_time / 60.0
     
-    # Update players
     for p in sim_players:
-        p['scores']['creepScore'] += random.randint(0, 2)
-        if p['level'] < 18:
-            p['level'] = min(18, p['level'] + random.randint(0, 1))
+        role = p.get('position', '')
+        gold = p.get('gold', 0)
+        
+        cs_min, cs_max = CS_PER_MINUTE_BY_ROLE.get(role, (8, 12))
+        cs_rate = random.uniform(cs_min, cs_max) / 6.0
+        cs_gained = max(0, int(random.gauss(cs_rate, cs_rate * 0.3)))
+        p['scores']['creepScore'] += cs_gained
+        gold += cs_gained * 21
+        
+        level_progression = min(18, max(1, int(game_minutes / 2.5) + 3))
+        p['level'] = min(18, max(p['level'], level_progression))
+        
+        passive_gold = 2.0 + (game_minutes * 0.3)
+        gold += passive_gold
+        
+        death_timer = victim.get('respawnTimer', 0) if 'victim' in locals() else 0
+        if p['scores']['deaths'] > len(getattr(p, 'death_times', [])):
+            gold_loss = 50 + int(gold * 0.05)
+            gold = max(300, gold - gold_loss)
+        
+        if random.random() < 0.08 and len(p['items']) < 6:
+            item_pool = ITEM_BY_ROLE.get(role, ITEM_BY_ROLE["MIDDLE"])
+            available_items = [i for i in item_pool if i not in [x['itemID'] for x in p['items']]]
+            if available_items and gold > 500:
+                new_item = random.choice(available_items)
+                item_cost = get_sim_item_price(new_item)
+                if gold >= item_cost:
+                    p['items'].append({"itemID": new_item})
+                    p['total_gold_spent'] += item_cost
+                    gold -= item_cost
+        
+        p['gold'] = gold
     
-    # Kills - 15% per tick (more action)
+    blue_kills = sum(p['scores']['kills'] for p in sim_players if p['team'] == 'ORDER')
+    red_kills = sum(p['scores']['kills'] for p in sim_players if p['team'] == 'CHAOS')
+    
+    blue_bounty = 300 if blue_kills > red_kills else 0
+    red_bounty = 300 if red_kills > blue_kills else 0
+    
+    blue_deaths = sum(p['scores']['deaths'] for p in sim_players if p['team'] == 'ORDER')
+    red_deaths = sum(p['scores']['deaths'] for p in sim_players if p['team'] == 'CHAOS')
+    
+    for p in sim_players:
+        kills = p['scores']['kills']
+        assists = p['scores']['assists']
+        deaths = p['scores']['deaths']
+        cs = p['scores']['creepScore']
+        items_value = sum(get_sim_item_price(i['itemID']) for i in p['items'])
+        
+        kill_assist_gold = (kills * 300) + (assists * 150)
+        
+        p['scores']['total_gold'] = 500 + (cs * 21) + kill_assist_gold + items_value
+    
     if random.random() < 0.15:
         killer = random.choice(sim_players)
         victim = random.choice([x for x in sim_players if x['team'] != killer['team']])
         
-        killer['scores']['kills'] = killer['scores'].get('kills', 0) + 1
-        victim['scores']['deaths'] = victim['scores'].get('deaths', 0) + 1
+        killer['scores']['kills'] += 1
+        killer['gold'] += 300
         
-        for ally in sim_players:
-            if ally['team'] == killer['team'] and ally != killer:
-                ally['scores']['assists'] = ally['scores'].get('assists', 0) + 1
+        victim_kills = victim['scores']['kills']
+        victim_deaths = victim['scores']['deaths']
+        victim_bounty = 300
+        if victim_kills > victim_deaths + 2:
+            victim_bounty = 600
+        elif victim_kills > victim_deaths:
+            victim_bounty = 450
         
-        sim_events.append({"EventID": sim_event_id, "EventName": "ChampionKill", "EventTime": game_time, "KillerName": killer['summonerName'], "VictimName": victim['summonerName']})
+        victim['scores']['deaths'] += 1
+        victim['gold'] = max(300, victim['gold'] - victim_bounty)
+        
+        assister_chance = random.random()
+        if assister_chance < 0.7:
+            for ally in sim_players:
+                if ally['team'] == killer['team'] and ally != killer:
+                    ally['scores']['assists'] += 1
+                    ally['gold'] += 150
+                    if assister_chance < 0.3:
+                        break
+        
+        sim_events.append({
+            "EventID": sim_event_id,
+            "EventName": "ChampionKill",
+            "EventTime": game_time,
+            "KillerName": killer['summonerName'],
+            "VictimName": victim['summonerName'],
+            "Assisters": []
+        })
         sim_event_id += 1
     
-    # Dragons - 8% per tick after min 1, randomly assigned to a team
-    if simulator_tick > 60 and random.random() < 0.08:
-        if sim_dragon_count < 8:
-            objective_team = random.choice(["ORDER", "CHAOS"])
-            objective_player = random.choice([p for p in sim_players if p['team'] == objective_team])['summonerName']
-            sim_events.append({"EventID": sim_event_id, "EventName": "DragonKill", "EventTime": game_time, "KillerName": objective_player})
-            sim_dragon_count += 1
-            sim_event_id += 1
+    if simulator_tick > 60 and random.random() < 0.08 and sim_dragon_count < 8:
+        objective_team = random.choice(["ORDER", "CHAOS"])
+        objective_player = random.choice([p for p in sim_players if p['team'] == objective_team])['summonerName']
+        sim_events.append({
+            "EventID": sim_event_id,
+            "EventName": "DragonKill",
+            "EventTime": game_time,
+            "KillerName": objective_player
+        })
+        sim_dragon_count += 1
+        sim_event_id += 1
     
-    # Baron - 5% per tick after 15 mins (900s), max 3
     if game_time > 900 and sim_baron_count < 3 and random.random() < 0.05:
         objective_team = random.choice(["ORDER", "CHAOS"])
         objective_player = random.choice([p for p in sim_players if p['team'] == objective_team])['summonerName']
-        sim_events.append({"EventID": sim_event_id, "EventName": "BaronKill", "EventTime": game_time, "KillerName": objective_player})
+        sim_events.append({
+            "EventID": sim_event_id,
+            "EventName": "BaronKill",
+            "EventTime": game_time,
+            "KillerName": objective_player
+        })
         sim_baron_count += 1
         sim_event_id += 1
     
-    # Turrets - 5% per tick
     if random.random() < 0.05:
         objective_team = random.choice(["ORDER", "CHAOS"])
         objective_player = random.choice([p for p in sim_players if p['team'] == objective_team])['summonerName']
-        sim_events.append({"EventID": sim_event_id, "EventName": "TurretKilled", "EventTime": game_time, "KillerName": objective_player})
+        sim_events.append({
+            "EventID": sim_event_id,
+            "EventName": "TurretKilled",
+            "EventTime": game_time,
+            "KillerName": objective_player
+        })
         sim_event_id += 1
     
     return {
