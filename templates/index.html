@@ -377,10 +377,14 @@
     <div class="status" id="status-msg">Waiting for game data...</div>
 
     <script>
-        const ctx = document.getElementById('winProbChart').getContext('2d');
-        
         Chart.defaults.color = '#A09B8C';
         Chart.defaults.borderColor = 'rgba(200, 170, 110, 0.2)';
+
+        var canvas = document.getElementById('winProbChart');
+        console.log('Canvas found:', canvas);
+        console.log('Canvas dimensions:', canvas ? canvas.width + 'x' + canvas.height : 'N/A');
+
+        var ctx = canvas.getContext('2d');
 
         const winProbChart = new Chart(ctx, {
             type: 'line',
@@ -406,8 +410,11 @@
                 ]
             },
             options: {
-                responsive: true,
+                responsive: false,
                 maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: '#F0E6D2' } }
+                },
                 scales: {
                     y: {
                         min: 0,
@@ -417,13 +424,10 @@
                     x: {
                         title: { display: true, text: 'Game Time', color: '#C8AA6E' }
                     }
-                },
-                plugins: {
-                    legend: { labels: { color: '#F0E6D2' } }
                 }
             }
         });
-        
+
         console.log('Chart initialized, ID:', winProbChart.id);
 
         function formatTime(seconds) {
