@@ -31,54 +31,47 @@ limiter = Limiter(
 )
 
 # --- MODEL DEFINITION ---
-class ResidualBlock(nn.Module):
-    def __init__(self, dim):
+class LoLLSTM(nn.Module):
+    def __init__(self, input_dim, hidden_dim=256, num_layers=2, dropout=0.3):
         super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(dim, dim),
-            nn.LayerNorm(dim),
-            nn.GELU(),
-            nn.Dropout(0.3),
-            nn.Linear(dim, dim),
-            nn.LayerNorm(dim),
-        )
-        self.act = nn.GELU()
+        self.hidden_dim = hidden_dim
+        self.num_layers = num_layers
         
-    def forward(self, x):
-        return self.act(x + self.net(x))
-
-class ImprovedLoLNet(nn.Module):
-    def __init__(self, input_dim):
-        super().__init__()
-        HIDDEN = 256  # Must match saved models
-        
-        self.input_proj = nn.Sequential(
-            nn.Linear(input_dim, HIDDEN),
-            nn.LayerNorm(HIDDEN),
-            nn.GELU(),
-            nn.Dropout(0.4)
+        self.lstm = nn.LSTM(
+            input_size=input_dim,
+            hidden_size=hidden_dim,
+            num_layers=num_layers,
+            batch_first=True,
+            bidirectional=True,
+            dropout=dropout if num_layers > 1 else 0
         )
-        self.res1 = ResidualBlock(HIDDEN)
-        self.res2 = ResidualBlock(HIDDEN)
-        self.res3 = ResidualBlock(HIDDEN)
-        self.head = nn.Sequential(
-            nn.Linear(HIDDEN, 128),
-            nn.LayerNorm(128),
+        
+        self.layer_norm = nn.LayerNorm(hidden_dim * 2)
+        
+        self.fc = nn.Sequential(
+            nn.Linear(hidden_dim * 2, hidden_dim),
+            nn.LayerNorm(hidden_dim),
             nn.GELU(),
-            nn.Dropout(0.4),
-            nn.Linear(128, 1),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, 64),
+            nn.LayerNorm(64),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(64, 1),
             nn.Sigmoid()
         )
     
     def forward(self, x):
-        x = self.input_proj(x)
-        x = self.res1(x)
-        x = self.res2(x)
-        x = self.res3(x)
-        return self.head(x)
+        if x.dim() == 2:
+            x = x.unsqueeze(1)
+        
+        lstm_out, _ = self.lstm(x)
+        last_hidden = lstm_out[:, -1, :]
+        last_hidden = self.layer_norm(last_hidden)
+        out = self.fc(last_hidden)
+        return out
 
-# Alias for backward compatibility
-LoLNet = ImprovedLoLNet
+LoLNet = LoLLSTM
 
 # --- GLOBAL APP STATE ---
 FEATURE_COLUMNS = []
@@ -637,7 +630,13 @@ def live_prediction():
         drop_cols = ['winning_team', 'match_id', 'minute']
         feature_cols = [c for c in FEATURE_COLUMNS if c not in drop_cols]
         
-        X_tensor = torch.tensor(df_live[feature_cols].values.astype('float32')).to(DEVICE)
+        feature_values = df_live[feature_cols].values.astype('float32')
+        
+        seq_len = 5
+        seq_input = np.tile(feature_values, (seq_len, 1))
+        seq_input = seq_input.reshape(1, seq_len, -1)
+        
+        X_tensor = torch.tensor(seq_input).to(DEVICE)
         
         with torch.no_grad():
             red_win_prob = model(X_tensor).item()

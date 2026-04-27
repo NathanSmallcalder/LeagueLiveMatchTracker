@@ -10,67 +10,50 @@ from sklearn.model_selection import GroupShuffleSplit
 from sklearn.preprocessing import StandardScaler
 import joblib
 
-# Improved Model with Modern Techniques
+# --- LSTM MODEL DEFINITION ---
 
-class ResidualBlock(nn.Module):
-    """Residual block with skip connection"""
-    def __init__(self, dim):
+class LoLLSTM(nn.Module):
+    def __init__(self, input_dim, hidden_dim=256, num_layers=2, dropout=0.3):
         super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(dim, dim),
-            nn.LayerNorm(dim),
-            nn.GELU(),
-            nn.Dropout(0.3),
-            nn.Linear(dim, dim),
-            nn.LayerNorm(dim),
+        self.hidden_dim = hidden_dim
+        self.num_layers = num_layers
+        
+        self.lstm = nn.LSTM(
+            input_size=input_dim,
+            hidden_size=hidden_dim,
+            num_layers=num_layers,
+            batch_first=True,
+            bidirectional=True,
+            dropout=dropout if num_layers > 1 else 0
         )
-        self.act = nn.GELU()
         
-    def forward(self, x):
-        return self.act(x + self.net(x))
-
-class ImprovedLoLNet(nn.Module):
-    def __init__(self, input_dim):
-        super().__init__()
+        self.layer_norm = nn.LayerNorm(hidden_dim * 2)
         
-        # Input projection
-        self.input_proj = nn.Sequential(
-            nn.Linear(input_dim, 256), # Reduced from 512
-            nn.LayerNorm(256),
+        self.fc = nn.Sequential(
+            nn.Linear(hidden_dim * 2, hidden_dim),
+            nn.LayerNorm(hidden_dim),
             nn.GELU(),
-            nn.Dropout(0.5) # Increased dropout
-        )
-        # Residual blocks
-        self.res1 = ResidualBlock(256)
-        self.res2 = ResidualBlock(256)
-        self.res3 = ResidualBlock(256)
-        
-        # Output head
-        self.head = nn.Sequential(
-            nn.Linear(256, 128),
-            nn.LayerNorm(128),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, 64),
+            nn.LayerNorm(64),
             nn.GELU(),
-            nn.Dropout(0.4),
-            nn.Linear(128, 1),
+            nn.Dropout(dropout),
+            nn.Linear(64, 1),
             nn.Sigmoid()
         )
-        
-        # Initialize weights
-        self._init_weights()
-    
-    def _init_weights(self):
-        for m in self.modules():
-            if isinstance(m, nn.Linear):
-                nn.init.xavier_uniform_(m.weight)
-                if m.bias is not None:
-                    nn.init.zeros_(m.bias)
     
     def forward(self, x):
-        x = self.input_proj(x)
-        x = self.res1(x)
-        x = self.res2(x)
-        x = self.res3(x)
-        return self.head(x)
+        if x.dim() == 2:
+            x = x.unsqueeze(1)
+        
+        lstm_out, _ = self.lstm(x)
+        
+        last_hidden = lstm_out[:, -1, :]
+        
+        last_hidden = self.layer_norm(last_hidden)
+        
+        out = self.fc(last_hidden)
+        return out
 
 # 1. DATA INGESTION
 print("Loading data...")
@@ -86,7 +69,6 @@ df = df.merge(df_matches, on='match_id', suffixes=('', '_match_drop'))
 ban_cols = [c for c in df.columns if '_is_banned' in c]
 df = df.drop(columns=ban_cols)
 
-# target encoding: 0 = Blue Win, 1 = Red Win
 df['winning_team'] = df['winning_team'].replace({100: 0, 200: 1})
 
 # 3. DUMMY ENCODING
@@ -131,19 +113,19 @@ if 'team_dragons' in df_wide.columns:
 
 df_wide.to_csv('df_wide.csv', index=False)
 
-# Feature Selection for Scaling
 keywords = ['gold', 'xp', 'cs', 'level', 'kills', 'deaths', 'diff', 'team_']
 continuous_cols = [c for c in df_wide.columns if any(x in c.lower() for x in keywords)]
 
 # 7. TRAINING LOOP
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 minutes_to_train = [5, 10, 15, 20, 25]
+SEQ_LEN = 5
 
 for target_min in minutes_to_train:
     df_m = df_wide[df_wide['minute'] == target_min].copy()
     if len(df_m) < 50: continue
 
-    print(f"\n--- Training Phase: {target_min} Minutes ---")
+    print(f"\n--- Training Phase: {target_min} Minutes (LSTM, seq_len={SEQ_LEN}) ---")
     
     gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
     train_idx, test_idx = next(gss.split(df_m, groups=df_m['match_id']))
@@ -154,62 +136,73 @@ for target_min in minutes_to_train:
     scaler = StandardScaler()
     train_df[continuous_cols] = scaler.fit_transform(train_df[continuous_cols])
     test_df[continuous_cols] = scaler.transform(test_df[continuous_cols])
+
     joblib.dump(scaler, f'scaler_{target_min}m.pkl')
 
     drop_cols = ['winning_team', 'match_id', 'minute']
-    X_train_raw = train_df.drop(columns=drop_cols).values.astype('float32')
-    y_train_raw = train_df['winning_team'].values.astype('float32').reshape(-1, 1)
-    X_test_raw = test_df.drop(columns=drop_cols).values.astype('float32')
-    y_test_raw = test_df['winning_team'].values.astype('float32').reshape(-1, 1)
-
-    X_train, y_train = torch.tensor(X_train_raw), torch.tensor(y_train_raw)
-    X_test, y_test = torch.tensor(X_test_raw), torch.tensor(y_test_raw)
-
-    # Improved model
-    model = ImprovedLoLNet(X_train.shape[1]).to(device)
+    feature_cols = [c for c in df_wide.columns if c not in drop_cols]
+    feature_count = len(feature_cols)
     
-    # Better optimizer with weight decay
+    X_train_raw = train_df[feature_cols].values.astype('float32')
+    y_train_raw = train_df['winning_team'].values.astype('float32')
+    X_test_raw = test_df[feature_cols].values.astype('float32')
+    y_test_raw = test_df['winning_team'].values.astype('float32')
+
+    print(f"Training samples: {len(X_train_raw)}, Feature count: {feature_count}")
+    
+    model = LoLLSTM(input_dim=feature_count, hidden_dim=256, num_layers=2, dropout=0.3).to(device)
+    
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.0005, weight_decay=0.01)
-    
-    # Learning rate scheduler
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode='max', factor=0.5, patience=5, verbose=True
     )
-    
-    # Standard BCE loss
     criterion = nn.BCELoss()
-
-    train_loader = DataLoader(TensorDataset(X_train, y_train), batch_size=256, shuffle=True)
 
     best_acc = 0
     patience_counter = 0
     max_patience = 15
+    batch_size = 128
     
     for epoch in range(100):
         model.train()
-        train_loss = 0
         train_correct = 0
         train_total = 0
-        for b_X, b_y in train_loader:
-            b_X, b_y = b_X.to(device), b_y.to(device)
-            optimizer.zero_grad()
-            preds = model(b_X)
-            loss = criterion(preds, b_y)
-            loss.backward()
-            optimizer.step()
-            train_loss += loss.item()
-            train_correct += (preds.round() == b_y).sum().item()
-            train_total += len(b_y)
         
-        avg_train_loss = train_loss / len(train_loader)
+        indices = np.random.permutation(len(X_train_raw))
+        for i in range(0, len(indices), batch_size):
+            batch_idx = indices[i:i+batch_size]
+            X_batch = X_train_raw[batch_idx]
+            y_batch = y_train_raw[batch_idx]
+            
+            seq_batch = np.zeros((len(X_batch), SEQ_LEN, feature_count))
+            for b in range(len(X_batch)):
+                seq_batch[b] = X_batch[b]
+            
+            X_tensor = torch.tensor(seq_batch).to(device)
+            y_tensor = torch.tensor(y_batch).reshape(-1, 1).to(device)
+            
+            optimizer.zero_grad()
+            preds = model(X_tensor)
+            loss = criterion(preds, y_tensor)
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            optimizer.step()
+            
+            train_correct += (preds.round() == y_tensor).sum().item()
+            train_total += len(y_batch)
+        
         train_acc = train_correct / train_total
         
         model.eval()
         with torch.no_grad():
-            val_preds = model(X_test.to(device)).round()
-            val_acc = (val_preds == y_test.to(device)).sum().item() / len(y_test)
+            test_seq = np.zeros((len(X_test_raw), SEQ_LEN, feature_count))
+            for b in range(len(X_test_raw)):
+                test_seq[b] = X_test_raw[b]
             
-            # Update scheduler
+            val_preds = model(torch.tensor(test_seq).to(device)).round()
+            y_test_tensor = torch.tensor(y_test_raw).to(device)
+            val_acc = (val_preds == y_test_tensor.reshape(-1, 1)).sum().item() / len(y_test_raw)
+            
             scheduler.step(val_acc)
             
             if val_acc > best_acc:
@@ -220,11 +213,12 @@ for target_min in minutes_to_train:
                 patience_counter += 1
         
         if epoch % 5 == 0:
-            print(f"Epoch {epoch} | Loss: {avg_train_loss:.4f} | Train: {train_acc:.2%} | Val: {val_acc:.2%}")
+            print(f"Epoch {epoch} | Train: {train_acc:.2%} | Val: {val_acc:.2%}")
         
-        # Early stopping
         if patience_counter >= max_patience:
             print(f"Early stopping at epoch {epoch}")
             break
 
     print(f"Best Val Acc: {best_acc:.2%}")
+
+print("\nTraining complete!")
