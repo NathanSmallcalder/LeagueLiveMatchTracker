@@ -254,15 +254,21 @@
                 <p>2. Wait a moment for the simulator to start.</p>
                 <p>3. Watch the live prediction graph build in real-time!</p>
                 
-                <h3>How It Works</h3>
-                <p>This application connects to the local Riot API at <code>127.0.0.1:2999</code>.</p>
-                <p>To connect to a real game, you must run this app locally (not remotely) with League of Legends running.</p>
-                <p>The app uses a PyTorch neural network trained on 1.7M+ match intervals to predict win probability based on live game stats.</p>
+                <h3>About This Project</h3>
+                <p>This is a <strong>live League of Legends win probability tracker</strong> built as a CV project demonstrating:</p>
+                <ul>
+                    <li><strong>PyTorch deep learning</strong> - Neural network trained on 1.7M+ match intervals</li>
+                    <li><strong>Real-time data ingestion</strong> - Connects to Riot's live client API</li>
+                    <li><strong>Flask web app</strong> - Hextech-themed UI with live Chart.js updates</li>
+                    <li><strong>1821 ML features</strong> - Gold, XP, CS, kills, champion matchups, objectives</li>
+                    <li><strong>Docker deployment</strong> - Containerized and ready to run anywhere</li>
+                </ul>
                 
-                <h3>Data Sources</h3>
-                <p>- <strong>Items:</strong> Fetched dynamically from Riot Data Dragon</p>
-                <p>- <strong>Model:</strong> LoLNet (3-layer MLP trained on match data)</p>
-                <p>- <strong>Features:</strong> 1821 columns (gold, XP, CS, kills, champions, objectives)</p>
+                <h3>Technical Stack</h3>
+                <p><strong>Backend:</strong> Python, Flask, PyTorch, Pandas, Requests</p>
+                <p><strong>Frontend:</strong> HTML/CSS/JS, Chart.js, Hextech-themed design</p>
+                <p><strong>Data:</strong> Riot API (live client), Data Dragon (item data)</p>
+                <p><strong>Deployment:</strong> Docker, Dockerfile included</p>
                 
                 <h3>View Source Code</h3>
                 <p>Click the <strong>GitHub</strong> button in the header to view the full source code.</p>
