@@ -215,14 +215,17 @@
 
         .chart-container {
             position: relative;
-            width: 100%;
-            max-width: 1000px;
+            width: 960px;
             height: 300px;
+            max-width: 1000px;
             background-color: var(--panel-bg);
             border: 1px solid var(--gold-accent);
             border-radius: 4px;
             padding: 20px;
-            box-sizing: border-box;
+        }
+
+        #winProbChart {
+            display: block;
         }
 
         .status {
@@ -370,7 +373,7 @@
     </div>
 
     <div class="chart-container">
-        <canvas id="winProbChart"></canvas>
+        <canvas id="winProbChart" width="960" height="260"></canvas>
     </div>
 
     <div class="status" id="status-msg">Waiting for game data...</div>
@@ -423,6 +426,11 @@
                 }
             }
         });
+
+        // Verify chart exists
+        if (typeof winProbChart === 'undefined') {
+            document.getElementById('status-msg').innerText = 'Error: Chart failed to initialize';
+        }
 
         function formatTime(seconds) {
             const m = Math.floor(seconds / 60).toString().padStart(2, '0');
