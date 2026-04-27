@@ -53,13 +53,14 @@ docker run -p 5000:5000 --network=host league-tracker
 
 ## The Model
 
-The predictor is a **3-block residual neural network** trained on 1.7M+ match intervals:
+The predictor is a **3-block residual neural network** trained on match intervals:
 
 - **Architecture:** Input projection (1818 -> 256) + 3 ResidualBlocks (256) + output head (256 -> 128 -> 1)
 - **Activation:** GELU with LayerNorm
-- **Regularization:** Dropout (0.3-0.5) and weight decay (AdamW, lambda=0.01)
+- **Regularization:** Dropout (0.5 input, 0.3 residual, 0.4 head) and weight decay (AdamW, lambda=0.01)
 - **Optimization:** AdamW with ReduceLROnPlateau scheduler and early stopping
 - **Separate models** trained for 5m, 10m, 15m, 20m, and 25m time intervals
+- **Weight initialization:** Xavier uniform
 
 ## Feature Engineering
 
@@ -80,13 +81,23 @@ The model uses 1,821 features per game state:
 lol-tracker/
 ├── app.py              # Flask application with live prediction logic
 ├── model.py            # Training script (ImprovedLoLNet architecture)
-├── df_wide.csv         # Feature template (1821 columns)
-├── lol_model_*.pth     # Trained model weights
-├── scaler_*.pkl        # Feature scalers for each time interval
+├── df_wide.csv         # Feature template (1821 columns, headers only)
+├── lol_model_5m.pth    # Trained model weights (5 minute intervals)
+├── lol_model_10m.pth
+├── lol_model_15m.pth
+├── lol_model_20m.pth
+├── lol_model_25m.pth
+├── scaler_5m.pkl       # Feature scalers for each time interval
+├── scaler_10m.pkl
+├── scaler_15m.pkl
+├── scaler_20m.pkl
+├── scaler_25m.pkl
 ├── templates/
 │   └── index.html      # Hextech-themed frontend
 ├── Dockerfile          # Docker configuration
-└── requirements.txt    # Python dependencies
+├── Procfile            # Render deployment configuration
+├── requirements.txt    # Python dependencies
+└── README.md           # This file
 ```
 
 ## License
