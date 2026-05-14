@@ -25,4 +25,4 @@ ENV RIOT_API_URL=http://host.docker.internal:2999/liveclientdata/allgamedata
 
 EXPOSE 5000
 
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:5000"]
+CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "4"]
