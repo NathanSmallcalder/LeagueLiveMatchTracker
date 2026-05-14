@@ -3,6 +3,7 @@ import csv
 import json
 import requests
 import socket
+import threading
 import torch
 import torch.nn as nn
 from flask import Flask, render_template, jsonify
@@ -185,6 +186,7 @@ sim_dragon_count = 0
 sim_baron_count = 0
 SIM_START_OFFSET = 300
 SIM_MAX_TICKS = 210
+_sim_lock = threading.Lock()
 
 def init_simulator_state():
     global sim_players, sim_events, sim_dragon_count, simulator_tick, sim_baron_count, sim_event_id
@@ -317,8 +319,9 @@ with app.app_context():
 def start_simulator():
     global simulator_active
     try:
-        init_simulator_state()
-        simulator_active = True
+        with _sim_lock:
+            init_simulator_state()
+            simulator_active = True
         return jsonify({"status": "started", "message": "Match simulator started successfully"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -327,17 +330,23 @@ def start_simulator():
 @limiter.limit("10 per minute")
 def stop_simulator():
     global simulator_active
-    simulator_active = False
-    # Reset simulator state to initial values
-    init_simulator_state()
+    with _sim_lock:
+        simulator_active = False
+        init_simulator_state()
     return jsonify({"status": "stopped", "message": "Simulator stopped and state reset"})
 
 def generate_simulated_data():
     global simulator_tick, sim_players, sim_events, sim_event_id, sim_dragon_count, sim_baron_count, simulator_active
-    
+
+    with _sim_lock:
+        return _generate_simulated_data_locked()
+
+def _generate_simulated_data_locked():
+    global simulator_tick, sim_players, sim_events, sim_event_id, sim_dragon_count, sim_baron_count, simulator_active
+
     if not simulator_active:
         return None
-    
+
     simulator_tick += 1
     
     if simulator_tick > SIM_MAX_TICKS:
@@ -668,9 +677,8 @@ def live_prediction():
         })
     
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": "An error occurred while processing your request"}), 500
+        print(f"Prediction error: {e}")
+        return jsonify({"error": f"DEBUG: {type(e).__name__}: {e}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
