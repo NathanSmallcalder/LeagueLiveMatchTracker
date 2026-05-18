@@ -1,10 +1,16 @@
 # League of Legends Live Win Probability Tracker
 
+## Live Demo
+https://lol-tracker-live-gjffbqgte2dcb0d9.denmarkeast-01.azurewebsites.net/
+
+### Running the App Locally whilsts being in game of League of Legends to watch the timeline update in real-time!
+
 A real-time win probability predictor for League of Legends matches, built with PyTorch and Flask.
 
 ## Data
 
 https://www.kaggle.com/datasets/nathansmallcalder/league-of-legends-match-interval-snapshots-2026
+https://www.kaggle.com/datasets/nathansmallcalder/lol-match-history-and-summoner-data-80k-matches
 
 ## Overview
 
@@ -29,8 +35,8 @@ This application connects to Riot's live client API to fetch real-time game data
 ### Installation
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/lol-tracker.git
-cd lol-tracker
+git clone https://github.com/NathanSmallcalder/LeagueLiveMatchTracker
+cd LeagueLiveMatchTracker
 pip install -r requirements.txt
 python app.py
 ```
@@ -53,7 +59,7 @@ docker run -p 5000:5000 --network=host league-tracker
 - **Backend:** Python, Flask, PyTorch, Pandas, Requests
 - **Frontend:** HTML/CSS/JS, Chart.js
 - **Data:** Riot API (live client), Data Dragon (item data)
-- **Deployment:** Docker
+- **Deployment:** Docker, Azure
 
 ## The Model
 
