@@ -2,6 +2,10 @@
 
 A real-time win probability predictor for League of Legends matches, built with PyTorch and Flask.
 
+## Data
+
+https://www.kaggle.com/datasets/nathansmallcalder/league-of-legends-match-interval-snapshots-2026
+
 ## Overview
 
 This application connects to Riot's live client API to fetch real-time game data and uses a neural network to predict the probability of each team winning. It features a Hextech-themed web interface with live Chart.js updates showing win probability trends, gold lead, and objective tracking.
